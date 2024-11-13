@@ -1,14 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
-import { Trophy, Star, Award, Medal, Users } from 'lucide-react';
+import { Trophy, Star, Award, Medal, Users, AlertTriangle } from 'lucide-react';
 import { statisticsService, UserRanking } from '../services/statistics';
+import { difficultyTracker } from '../services/difficultyTracking';
+import { motion } from 'framer-motion';
+
+interface WeakPoint {
+  table: number;
+  multiplier: number;
+  successRate: number;
+  attempts: number;
+}
 
 export function Progress() {
   const { score, loadLastScore } = useGame();
   const { user } = useAuth();
   const [topPlayers, setTopPlayers] = useState<UserRanking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [weakPoints, setWeakPoints] = useState<WeakPoint[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -16,6 +26,11 @@ export function Progress() {
         await loadLastScore();
         const rankings = await statisticsService.getTopPlayers();
         setTopPlayers(rankings);
+
+        if (user) {
+          const difficulties = await difficultyTracker.getWeakPoints(user);
+          setWeakPoints(difficulties);
+        }
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
@@ -24,7 +39,7 @@ export function Progress() {
     };
 
     loadData();
-  }, [loadLastScore]);
+  }, [loadLastScore, user]);
 
   const achievements = [
     {
@@ -146,6 +161,53 @@ export function Progress() {
           ))}
         </div>
       </div>
+
+      {weakPoints.length > 0 && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl p-6 shadow-sm"
+        >
+          <div className="flex items-center space-x-2 mb-4">
+            <AlertTriangle className="h-6 w-6 text-orange-500" />
+            <h2 className="text-xl font-semibold text-gray-900">Points à Renforcer</h2>
+          </div>
+          <div className="space-y-4">
+            {weakPoints.map((point) => (
+              <div
+                key={`${point.table}x${point.multiplier}`}
+                className="bg-orange-50 rounded-lg p-4"
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className="text-lg font-semibold text-orange-700">
+                      {point.table} × {point.multiplier}
+                    </span>
+                    <p className="text-sm text-orange-600 mt-1">
+                      {point.attempts} tentatives
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-orange-700">
+                      {Math.round(point.successRate)}%
+                    </div>
+                    <p className="text-sm text-orange-600">de réussite</p>
+                  </div>
+                </div>
+                <div className="mt-2 w-full h-2 bg-orange-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-orange-500 rounded-full"
+                    style={{ width: `${point.successRate}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+            <p className="text-sm text-gray-600 mt-4">
+              Ces multiplications nécessitent plus d'attention. Continue à t'entraîner pour améliorer tes scores !
+            </p>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 MultiMaster est une application web interactive et ludique conçue pour aider les enfants à maîtriser leurs tables de multiplication à travers différents modes de jeu et un système de progression motivant.
 
-![MultiMaster Screenshot](https://images.unsplash.com/photo-1632571401005-458e9d244591?q=80&w=1200&auto=format&fit=crop)
+![MultiMaster Screenshot](screenshot.png)
 
 ## ✨ Fonctionnalités
 

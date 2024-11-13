@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Check, X, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../../context/GameContext';
+import { useAuth } from '../../context/AuthContext';
+import { difficultyTracker } from '../../services/difficultyTracking';
 import confetti from 'canvas-confetti';
 
 interface ClassicGameProps {
@@ -9,9 +11,60 @@ interface ClassicGameProps {
   difficulty: string;
 }
 
+interface Question {
+  table: number;
+  multiplier: number;
+  result: number;
+}
+
+async function generateQuestion(
+  tables: number[],
+  previousQuestion?: Question,
+  user?: any
+): Promise<Question> {
+  let newQuestion;
+  
+  // Récupérer les points faibles de l'utilisateur
+  const weakPoints = user ? await difficultyTracker.getWeakPoints(user) : [];
+  const probabilities = difficultyTracker.calculateProbability(weakPoints);
+  
+  // 70% de chance de choisir parmi les points faibles si disponibles
+  const useWeakPoint = Math.random() < 0.7 && weakPoints.length > 0;
+  
+  if (useWeakPoint) {
+    // Sélectionner un point faible basé sur les probabilités
+    const rand = Math.random();
+    let cumSum = 0;
+    for (const [key, prob] of probabilities.entries()) {
+      cumSum += prob;
+      if (rand <= cumSum) {
+        const [table, multiplier] = key.split('x').map(Number);
+        newQuestion = { table, multiplier, result: table * multiplier };
+        break;
+      }
+    }
+  }
+  
+  // Si pas de point faible ou si on choisit une question aléatoire
+  if (!newQuestion) {
+    do {
+      const table = tables[Math.floor(Math.random() * tables.length)];
+      const multiplier = Math.floor(Math.random() * 10) + 1;
+      newQuestion = { table, multiplier, result: table * multiplier };
+    } while (
+      previousQuestion &&
+      previousQuestion.table === newQuestion.table &&
+      previousQuestion.multiplier === newQuestion.multiplier
+    );
+  }
+
+  return newQuestion;
+}
+
 export function ClassicGame({ onGameEnd, difficulty }: ClassicGameProps) {
   const { selectedTables } = useGame();
-  const [currentQuestion, setCurrentQuestion] = useState(() => generateQuestion(selectedTables));
+  const { user } = useAuth();
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [questionsAnswered, setQuestionsAnswered] = useState(0);
@@ -19,7 +72,22 @@ export function ClassicGame({ onGameEnd, difficulty }: ClassicGameProps) {
   const [timeLeft, setTimeLeft] = useState(() => getQuestionTime(difficulty));
   const [stars, setStars] = useState(0);
   const [isAnswerProcessing, setIsAnswerProcessing] = useState(false);
+  const [weakPoints, setWeakPoints] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Charger la première question
+    generateQuestion(selectedTables, undefined, user).then(question => {
+      setCurrentQuestion(question);
+    });
+
+    // Charger les points faibles initiaux
+    if (user) {
+      difficultyTracker.getWeakPoints(user).then(difficulties => {
+        setWeakPoints(difficulties.map(d => `${d.table}×${d.multiplier}`));
+      });
+    }
+  }, [selectedTables, user]);
 
   function getQuestionTime(diff: string) {
     switch (diff) {
@@ -28,12 +96,6 @@ export function ClassicGame({ onGameEnd, difficulty }: ClassicGameProps) {
       case 'hard': return 10;
       default: return 20;
     }
-  }
-
-  function generateQuestion(tables: number[]) {
-    const table = tables[Math.floor(Math.random() * tables.length)];
-    const multiplier = Math.floor(Math.random() * 10) + 1;
-    return { table, multiplier, result: table * multiplier };
   }
 
   // Maintenir le focus sur l'input
@@ -45,10 +107,18 @@ export function ClassicGame({ onGameEnd, difficulty }: ClassicGameProps) {
 
   // Handle timer
   useEffect(() => {
-    if (timeLeft <= 0 && !isAnswerProcessing) {
+    if (timeLeft <= 0 && !isAnswerProcessing && currentQuestion) {
       setIsAnswerProcessing(true);
       setFeedback('incorrect');
       setStars(0);
+      if (user) {
+        difficultyTracker.updateDifficulty(
+          user,
+          currentQuestion.table,
+          currentQuestion.multiplier,
+          false
+        );
+      }
     }
 
     const timer = setInterval(() => {
@@ -56,15 +126,16 @@ export function ClassicGame({ onGameEnd, difficulty }: ClassicGameProps) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, isAnswerProcessing]);
+  }, [timeLeft, isAnswerProcessing, currentQuestion, user]);
 
   // Handle answer processing
   useEffect(() => {
     if (isAnswerProcessing) {
-      const timer = setTimeout(() => {
+      const timer = setTimeout(async () => {
         setFeedback(null);
         setAnswer('');
-        setCurrentQuestion(generateQuestion(selectedTables));
+        const newQuestion = await generateQuestion(selectedTables, currentQuestion, user);
+        setCurrentQuestion(newQuestion);
         setQuestionsAnswered(prev => prev + 1);
         setTimeLeft(getQuestionTime(difficulty));
         setIsAnswerProcessing(false);
@@ -72,7 +143,7 @@ export function ClassicGame({ onGameEnd, difficulty }: ClassicGameProps) {
 
       return () => clearTimeout(timer);
     }
-  }, [isAnswerProcessing, selectedTables, difficulty]);
+  }, [isAnswerProcessing, selectedTables, difficulty, currentQuestion, user]);
 
   // Handle game end
   useEffect(() => {
@@ -82,18 +153,31 @@ export function ClassicGame({ onGameEnd, difficulty }: ClassicGameProps) {
     }
   }, [questionsAnswered, correctAnswers, onGameEnd]);
 
-  const handleAnswer = useCallback(() => {
-    if (isAnswerProcessing) return;
+  const handleAnswer = useCallback(async () => {
+    if (isAnswerProcessing || !currentQuestion) return;
 
     const isCorrect = parseInt(answer) === currentQuestion.result;
     setIsAnswerProcessing(true);
     setFeedback(isCorrect ? 'correct' : 'incorrect');
-    
+
+    if (user) {
+      await difficultyTracker.updateDifficulty(
+        user,
+        currentQuestion.table,
+        currentQuestion.multiplier,
+        isCorrect
+      );
+
+      // Mettre à jour les points faibles
+      const updatedWeakPoints = await difficultyTracker.getWeakPoints(user);
+      setWeakPoints(updatedWeakPoints.map(d => `${d.table}×${d.multiplier}`));
+    }
+
     if (isCorrect) {
       setCorrectAnswers(prev => prev + 1);
       const newStars = Math.min(stars + 1, 5);
       setStars(newStars);
-      
+
       if (newStars === 5) {
         confetti({
           particleCount: 100,
@@ -104,7 +188,11 @@ export function ClassicGame({ onGameEnd, difficulty }: ClassicGameProps) {
     } else {
       setStars(0);
     }
-  }, [answer, currentQuestion.result, stars, isAnswerProcessing]);
+  }, [answer, currentQuestion, stars, isAnswerProcessing, user]);
+
+  if (!currentQuestion) {
+    return <div>Chargement...</div>;
+  }
 
   return (
     <div className="max-w-xl mx-auto space-y-8">
@@ -113,7 +201,7 @@ export function ClassicGame({ onGameEnd, difficulty }: ClassicGameProps) {
           <div className="text-lg font-medium">
             Question {questionsAnswered + 1}/10
           </div>
-          <motion.div 
+          <motion.div
             key={timeLeft}
             initial={{ scale: 1 }}
             animate={{ scale: timeLeft <= 5 ? [1, 1.1, 1] : 1 }}
@@ -132,14 +220,21 @@ export function ClassicGame({ onGameEnd, difficulty }: ClassicGameProps) {
         </div>
 
         <div className="text-center space-y-6">
-          <motion.h2
+          <motion.div
             key={currentQuestion.table + currentQuestion.multiplier}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-3xl font-bold"
+            className="space-y-2"
           >
-            {currentQuestion.table} × {currentQuestion.multiplier} = ?
-          </motion.h2>
+            <h2 className="text-3xl font-bold">
+              {currentQuestion.table} × {currentQuestion.multiplier} = ?
+            </h2>
+            {weakPoints.includes(`${currentQuestion.table}×${currentQuestion.multiplier}`) && (
+              <div className="text-sm text-orange-600 bg-orange-50 py-1 px-3 rounded-full inline-block">
+                Point à renforcer
+              </div>
+            )}
+          </motion.div>
 
           <input
             ref={inputRef}
@@ -161,7 +256,7 @@ export function ClassicGame({ onGameEnd, difficulty }: ClassicGameProps) {
                   feedback === 'correct' ? 'text-green-600' : 'text-red-600'
                 }`}
               >
-                {feedback === 'correct' 
+                {feedback === 'correct'
                   ? <Check className="h-6 w-6" />
                   : <X className="h-6 w-6" />
                 }
@@ -197,6 +292,22 @@ export function ClassicGame({ onGameEnd, difficulty }: ClassicGameProps) {
           </div>
         </div>
       </div>
+
+      {weakPoints.length > 0 && (
+        <div className="bg-orange-50 rounded-xl p-4">
+          <h3 className="font-medium text-orange-800 mb-2">Points à renforcer :</h3>
+          <div className="flex flex-wrap gap-2">
+            {weakPoints.map(point => (
+              <span
+                key={point}
+                className="bg-white text-orange-600 px-3 py-1 rounded-full text-sm"
+              >
+                {point}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

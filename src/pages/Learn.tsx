@@ -9,64 +9,72 @@ import { motion } from 'framer-motion';
 
 const DAILY_TIPS = [
   {
-    title: "Multiplier par 5",
-    tip: "Pour multiplier par 5, tu peux diviser par 2 et multiplier par 10 ! Par exemple : 8 × 5 = (8 ÷ 2) × 10 = 4 × 10 = 40",
-    category: "astuces"
-  },
-  {
-    title: "Multiplier par 9",
-    tip: "Pour multiplier par 9, multiplie par 10 et soustrais le nombre une fois ! Par exemple : 7 × 9 = (7 × 10) - 7 = 70 - 7 = 63",
-    category: "astuces"
-  },
-  {
-    title: "La méthode des doigts pour la table de 9",
-    tip: "Place tes 10 doigts devant toi. Pour 9×3, plie le 3ème doigt. À gauche tu as 2 doigts (20), à droite 7 doigts (7). Donc 9×3 = 27 !",
-    category: "trucs"
-  },
-  {
-    title: "Les doubles",
-    tip: "La table de 2, ce sont les doubles ! 2×6 = 6+6 = 12. Facile non ?",
-    category: "astuces"
-  },
-  {
-    title: "Les carrés",
-    tip: "Un nombre multiplié par lui-même s'appelle un carré ! Par exemple : 7 × 7 = 49 est le carré de 7. Les carrés forment une diagonale dans le tableau !",
-    category: "découverte"
-  },
-  {
-    title: "Multiplier par 4",
-    tip: "Pour multiplier par 4, double le nombre deux fois ! Par exemple : 7 × 4 = (7 × 2) × 2 = 14 × 2 = 28",
-    category: "astuces"
-  },
-  {
-    title: "La commutativité",
-    tip: "L'ordre des nombres ne change pas le résultat ! 3 × 4 = 4 × 3 = 12. C'est pour ça que le tableau est symétrique !",
-    category: "découverte"
+    title: "Multiplier par 2",
+    tip: "Pour multiplier un nombre par 2, ajoute le nombre à lui-même. Par exemple : 6 × 2 = 6 + 6 = 12."
   },
   {
     title: "Multiplier par 3",
-    tip: "Pour multiplier par 3, additionne le nombre deux fois ! Par exemple : 6 × 3 = 6 + 6 + 6 = 18",
-    category: "astuces"
+    tip: "Pour multiplier un nombre par 3, additionne le nombre trois fois. Par exemple : 6 × 3 = 6 + 6 + 6 = 18."
   },
   {
-    title: "Les voisins",
-    tip: "7 × 6 est proche de 6 × 6 = 36. Donc 7 × 6 = 36 + 6 = 42. Utilise les résultats que tu connais !",
-    category: "trucs"
+    title: "Multiplier par 4",
+    tip: "Pour multiplier par 4, multiplie le nombre par 2, puis encore par 2. Par exemple : 7 × 4 = (7 × 2) × 2 = 14 × 2 = 28."
   },
   {
-    title: "La table de 5",
-    tip: "Les résultats de la table de 5 se terminent toujours par 0 ou 5 ! 5, 10, 15, 20, 25, 30, 35, 40, 45, 50",
-    category: "découverte"
+    title: "Multiplier par 5",
+    tip: "Pour multiplier par 5, multiplie le nombre par 10 puis divise par 2. Par exemple : 8 × 5 = (8 × 10) ÷ 2 = 80 ÷ 2 = 40."
   },
   {
-    title: "Décomposer les multiplications",
-    tip: "Pour 7×8, tu peux faire (5×8) + (2×8) = 40 + 16 = 56",
-    category: "trucs"
+    title: "Multiplier par 6",
+    tip: "Pour multiplier par 6, multiplie d'abord par 2, puis par 3. Par exemple : 7 × 6 = (7 × 2) × 3 = 14 × 3 = 42."
   },
   {
-    title: "Les régularités",
-    tip: "Dans la table de 4, les résultats augmentent de 4 en 4 : 4, 8, 12, 16, 20, 24, 28, 32, 36, 40",
-    category: "découverte"
+    title: "Multiplier par 7",
+    tip: "Pour multiplier par 7, multiplie par 5 puis ajoute deux fois le nombre. Par exemple : 6 × 7 = (6 × 5) + (6 × 2) = 30 + 12 = 42."
+  },
+  {
+    title: "Multiplier par 8",
+    tip: "Pour multiplier par 8, multiplie le nombre par 2 trois fois. Par exemple : 5 × 8 = ((5 × 2) × 2) × 2 = 40."
+  },
+  {
+    title: "Multiplier par 9",
+    tip: "Pour multiplier par 9, multiplie le nombre par 10 puis soustrais le nombre une fois. Par exemple : 7 × 9 = (7 × 10) - 7 = 70 - 7 = 63."
+  },
+  {
+    title: "Multiplier par 11",
+    tip: "Pour multiplier un nombre à un chiffre par 11, répète le chiffre deux fois. Par exemple : 5 × 11 = 55."
+  },
+  {
+    title: "Multiplier par 12",
+    tip: "Pour multiplier par 12, multiplie par 10 puis ajoute deux fois le nombre. Par exemple : 7 × 12 = (7 × 10) + (7 × 2) = 70 + 14 = 84."
+  },
+  {
+    title: "Multiplier par 25",
+    tip: "Pour multiplier par 25, multiplie par 100 puis divise par 4. Par exemple : 8 × 25 = (8 × 100) ÷ 4 = 800 ÷ 4 = 200."
+  },
+  {
+    title: "Les carrés",
+    tip: "Un nombre multiplié par lui-même s'appelle un carré. Par exemple : 7 × 7 = 49 est le carré de 7."
+  },
+  {
+    title: "Multiplier par 0",
+    tip: "Tout nombre multiplié par 0 est égal à 0. Par exemple : 9 × 0 = 0."
+  },
+  {
+    title: "Multiplier par 1",
+    tip: "Tout nombre multiplié par 1 est égal à lui-même. Par exemple : 9 × 1 = 9."
+  },
+  {
+    title: "La commutativité",
+    tip: "L'ordre des facteurs n'affecte pas le produit. Par exemple : 3 × 4 = 4 × 3 = 12."
+  },
+  {
+    title: "Propriété associative",
+    tip: "Lors de la multiplication de plusieurs nombres, la façon de regrouper les facteurs n'affecte pas le produit. Par exemple : (2 × 3) × 4 = 2 × (3 × 4) = 24."
+  },
+  {
+    title: "Astuce des voisins",
+    tip: "Pour calculer 7 × 6, utilise 6 × 6 = 36 puis ajoute 6. Donc, 7 × 6 = 36 + 6 = 42."
   }
 ];
 

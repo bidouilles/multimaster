@@ -8,9 +8,31 @@ interface TimeAttackGameProps {
   difficulty: string;
 }
 
+interface Question {
+  table: number;
+  multiplier: number;
+  result: number;
+}
+
+function generateQuestion(tables: number[], previousQuestion?: Question): Question {
+  let newQuestion;
+  
+  do {
+    const table = tables[Math.floor(Math.random() * tables.length)];
+    const multiplier = Math.floor(Math.random() * 10) + 1;
+    newQuestion = { table, multiplier, result: table * multiplier };
+  } while (
+    previousQuestion &&
+    previousQuestion.table === newQuestion.table &&
+    previousQuestion.multiplier === newQuestion.multiplier
+  );
+
+  return newQuestion;
+}
+
 export function TimeAttackGame({ onGameEnd, difficulty }: TimeAttackGameProps) {
   const { selectedTables } = useGame();
-  const [currentQuestion, setCurrentQuestion] = useState(generateQuestion());
+  const [currentQuestion, setCurrentQuestion] = useState<Question>(() => generateQuestion(selectedTables));
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [questionsAnswered, setQuestionsAnswered] = useState(0);
@@ -22,6 +44,7 @@ export function TimeAttackGame({ onGameEnd, difficulty }: TimeAttackGameProps) {
       case 'easy': return 60;
       case 'medium': return 45;
       case 'hard': return 30;
+      default: return 60;
     }
   }
 
@@ -39,24 +62,18 @@ export function TimeAttackGame({ onGameEnd, difficulty }: TimeAttackGameProps) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [correctAnswers, questionsAnswered]);
-
-  function generateQuestion() {
-    const table = selectedTables[Math.floor(Math.random() * selectedTables.length)];
-    const multiplier = Math.floor(Math.random() * 10) + 1;
-    return { table, multiplier, result: table * multiplier };
-  }
+  }, [correctAnswers, questionsAnswered, onGameEnd]);
 
   function handleAnswer() {
     const isCorrect = parseInt(answer) === currentQuestion.result;
     setFeedback(isCorrect ? 'correct' : 'incorrect');
-    
+
     if (isCorrect) setCorrectAnswers(prev => prev + 1);
-    
+
     setTimeout(() => {
       setFeedback(null);
       setAnswer('');
-      setCurrentQuestion(generateQuestion());
+      setCurrentQuestion(prevQuestion => generateQuestion(selectedTables, prevQuestion));
       setQuestionsAnswered(prev => prev + 1);
     }, 1000);
   }
@@ -102,7 +119,7 @@ export function TimeAttackGame({ onGameEnd, difficulty }: TimeAttackGameProps) {
                   feedback === 'correct' ? 'text-green-600' : 'text-red-600'
                 }`}
               >
-                {feedback === 'correct' 
+                {feedback === 'correct'
                   ? <Check className="h-6 w-6" />
                   : <X className="h-6 w-6" />
                 }
