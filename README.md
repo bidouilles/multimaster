@@ -6,11 +6,11 @@ MultiMaster est une application web interactive et ludique conçue pour aider le
 
 ## ✨ Fonctionnalités
 
-### 📚 Apprentissage
-- Visualisation interactive des tables avec support audio
-- Tableau de multiplication complet avec mise en évidence des tables sélectionnées
-- Astuces et conseils personnalisés basés sur les performances
-- Suggestions de tables à revoir en fonction des résultats
+### 📚 Apprentissage Adaptatif
+- Système intelligent de détection des points faibles
+- Suggestions personnalisées basées sur les performances
+- Répétition optimisée des multiplications difficiles
+- Astuces et conseils contextuels
 
 ### 🎮 Modes de Jeu
 - **Mode Classique**: Quiz de 10 questions avec système d'étoiles
@@ -25,11 +25,32 @@ MultiMaster est une application web interactive et ludique conçue pour aider le
 - Classement des joueurs
 - Badges et récompenses
 
-### 🔄 Fonctionnalités Techniques
-- Authentification complète (inscription/connexion)
-- Sauvegarde automatique des progrès
-- Mode hors-ligne
-- Statistiques détaillées
+## 🧠 Système de Suivi des Difficultés
+
+MultiMaster utilise un système sophistiqué de suivi des difficultés (Difficulty Tracker) pour optimiser l'apprentissage :
+
+### Fonctionnement
+
+1. **Détection des Points Faibles**
+   - Analyse continue des performances sur chaque multiplication
+   - Calcul du taux de réussite et suivi des succès consécutifs
+   - Identification des multiplications nécessitant plus de pratique
+
+2. **Adaptation Dynamique**
+   - 70% des questions générées ciblent les points faibles
+   - Probabilité de sélection basée sur le taux d'échec
+   - Plus une multiplication est difficile, plus elle apparaît fréquemment
+
+3. **Critères de Maîtrise**
+   - Minimum de 3 tentatives requises
+   - Taux de réussite supérieur à 85%
+   - 3 succès consécutifs nécessaires
+   - Une fois maîtrisée, la multiplication sort de la rotation des points faibles
+
+4. **Persistance des Données**
+   - Sauvegarde automatique des statistiques
+   - Synchronisation entre les appareils
+   - Mode hors-ligne disponible
 
 ## 🛠 Technologies Utilisées
 
@@ -74,44 +95,6 @@ VITE_FIREBASE_APP_ID=votre-app-id
 npm run dev
 ```
 
-## 🔜 Améliorations Proposées
-
-### 1. Nouveaux Modes de Jeu
-- **Mode Battle**: Affrontez d'autres joueurs en temps réel
-- **Mode Histoire**: Progression à travers différents "mondes" thématiques
-- **Mode Créatif**: Créez vos propres quiz et partagez-les
-- **Chasse au Trésor**: Résolvez des énigmes mathématiques pour trouver des trésors
-
-### 2. Gamification Avancée
-- Système de "power-ups" (multiplicateur de points, gel du temps, etc.)
-- Quêtes hebdomadaires avec récompenses spéciales
-- Personnalisation de l'avatar avec des récompenses débloquées
-- Collections d'objets virtuels à collectionner
-
-### 3. Social et Communauté
-- Création de classes virtuelles pour les enseignants
-- Système d'amis et de défis entre amis
-- Tableaux de classement par école/classe
-- Partage des réussites sur les réseaux sociaux
-
-### 4. Apprentissage Adaptatif
-- Algorithme d'apprentissage adaptatif pour personnaliser la difficulté
-- Détection des points faibles et suggestions personnalisées
-- Parcours d'apprentissage dynamique
-- Rapports détaillés pour les parents/enseignants
-
-### 5. Multimédia et Interaction
-- Support de la réalité augmentée pour visualiser les multiplications
-- Mini-jeux utilisant le microphone pour les réponses vocales
-- Animations et effets visuels plus élaborés
-- Mode "karaoké" des tables de multiplication
-
-### 6. Accessibilité
-- Support multilingue
-- Mode daltonien
-- Synthèse vocale améliorée
-- Interface adaptative pour différents handicaps
-
 ## 🤝 Contribution
 
 Les contributions sont les bienvenues ! Consultez notre guide de contribution pour commencer.
@@ -119,7 +102,3 @@ Les contributions sont les bienvenues ! Consultez notre guide de contribution po
 ## 📄 Licence
 
 Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
-
-## 📧 Contact
-
-Pour toute question ou suggestion, n'hésitez pas à ouvrir une issue sur GitHub.

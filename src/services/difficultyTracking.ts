@@ -9,6 +9,7 @@ import {
   limit,
   runTransaction,
   doc,
+  getDoc,
   setDoc
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
@@ -19,6 +20,7 @@ interface MultiplicationDifficulty {
   successRate: number;
   attempts: number;
   lastAttempt: Date;
+  consecutiveSuccesses: number;
 }
 
 export interface DifficultyStats {
@@ -31,24 +33,46 @@ class DifficultyTracker {
   private static WEIGHT_RECENT = 0.7;
   private static WEIGHT_HISTORY = 0.3;
   private static MIN_ATTEMPTS = 3;
+  private static MIN_SUCCESS_RATE = 85;
+  private static CONSECUTIVE_SUCCESSES_REQUIRED = 3;
   private static COLLECTION_NAME = 'difficultyStats';
 
   private async ensureUserStats(user: User): Promise<void> {
+    if (!user?.uid) return;
+
     try {
       const statsRef = doc(db, DifficultyTracker.COLLECTION_NAME, user.uid);
-      await runTransaction(db, async (transaction) => {
-        const statsDoc = await transaction.get(statsRef);
-        if (!statsDoc.exists()) {
-          await setDoc(statsRef, {
-            userId: user.uid,
-            difficulties: [],
-            lastUpdate: new Date()
-          });
-        }
-      });
+      const statsDoc = await getDoc(statsRef);
+
+      if (!statsDoc.exists()) {
+        await setDoc(statsRef, {
+          userId: user.uid,
+          difficulties: [],
+          lastUpdate: new Date()
+        });
+      }
     } catch (error) {
       console.error('Error ensuring user stats:', error);
+      throw new Error('Failed to initialize user statistics');
     }
+  }
+
+  private isMultiplicationMastered(difficulty: MultiplicationDifficulty): boolean {
+    return (
+      difficulty.attempts >= DifficultyTracker.MIN_ATTEMPTS &&
+      difficulty.successRate >= DifficultyTracker.MIN_SUCCESS_RATE &&
+      difficulty.consecutiveSuccesses >= DifficultyTracker.CONSECUTIVE_SUCCESSES_REQUIRED
+    );
+  }
+
+  private isMultiplicationWeakPoint(difficulty: MultiplicationDifficulty): boolean {
+    return (
+      difficulty.attempts >= DifficultyTracker.MIN_ATTEMPTS &&
+      (
+        difficulty.successRate < DifficultyTracker.MIN_SUCCESS_RATE ||
+        difficulty.consecutiveSuccesses < DifficultyTracker.CONSECUTIVE_SUCCESSES_REQUIRED
+      )
+    );
   }
 
   async updateDifficulty(
@@ -65,7 +89,9 @@ class DifficultyTracker {
 
       await runTransaction(db, async (transaction) => {
         const statsDoc = await transaction.get(statsRef);
-        if (!statsDoc.exists()) return;
+        if (!statsDoc.exists()) {
+          throw new Error('User statistics not found');
+        }
 
         const stats = statsDoc.data() as DifficultyStats;
         const difficultyIndex = stats.difficulties.findIndex(
@@ -78,7 +104,8 @@ class DifficultyTracker {
             multiplier,
             successRate: isCorrect ? 100 : 0,
             attempts: 1,
-            lastAttempt: new Date()
+            lastAttempt: new Date(),
+            consecutiveSuccesses: isCorrect ? 1 : 0
           });
         } else {
           const difficulty = stats.difficulties[difficultyIndex];
@@ -87,12 +114,23 @@ class DifficultyTracker {
             (difficulty.attempts + 1)
           );
           
-          stats.difficulties[difficultyIndex] = {
+          const consecutiveSuccesses = isCorrect 
+            ? difficulty.consecutiveSuccesses + 1 
+            : 0;
+
+          const updatedDifficulty = {
             ...difficulty,
             successRate: newSuccessRate,
             attempts: difficulty.attempts + 1,
-            lastAttempt: new Date()
+            lastAttempt: new Date(),
+            consecutiveSuccesses
           };
+
+          if (this.isMultiplicationMastered(updatedDifficulty)) {
+            stats.difficulties.splice(difficultyIndex, 1);
+          } else {
+            stats.difficulties[difficultyIndex] = updatedDifficulty;
+          }
         }
 
         stats.lastUpdate = new Date();
@@ -100,6 +138,7 @@ class DifficultyTracker {
       });
     } catch (error) {
       console.error('Error updating difficulty:', error);
+      throw new Error('Failed to update difficulty statistics');
     }
   }
 
@@ -109,17 +148,16 @@ class DifficultyTracker {
     try {
       await this.ensureUserStats(user);
       const statsRef = doc(db, DifficultyTracker.COLLECTION_NAME, user.uid);
-      const statsDoc = await getDocs(query(collection(db, DifficultyTracker.COLLECTION_NAME), 
-        where('userId', '==', user.uid),
-        limit(1)
-      ));
+      const statsDoc = await getDoc(statsRef);
 
-      if (statsDoc.empty) return [];
+      if (!statsDoc.exists()) {
+        return [];
+      }
 
-      const stats = statsDoc.docs[0].data() as DifficultyStats;
+      const stats = statsDoc.data() as DifficultyStats;
       
       return stats.difficulties
-        .filter(d => d.attempts >= DifficultyTracker.MIN_ATTEMPTS)
+        .filter(d => this.isMultiplicationWeakPoint(d))
         .sort((a, b) => a.successRate - b.successRate)
         .slice(0, 5);
     } catch (error) {
