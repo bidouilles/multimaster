@@ -18,7 +18,7 @@ export function MemoryGame({ onGameEnd }: MemoryGameProps) {
   const [memoryCards, setMemoryCards] = useState<MemoryCard[]>([]);
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
   const [matchedPairs, setMatchedPairs] = useState<number[]>([]);
-  const [timeLeft, setTimeLeft] = useState(60); // Temps augmenté à 60 secondes
+  const [timeLeft, setTimeLeft] = useState(60);
 
   useEffect(() => {
     initializeGame();
@@ -100,44 +100,44 @@ export function MemoryGame({ onGameEnd }: MemoryGameProps) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="h-[calc(100vh-16rem)] flex flex-col justify-between max-w-2xl mx-auto">
       <div className="mb-4 flex justify-between items-center">
         <div className="text-lg font-medium">Paires trouvées: {matchedPairs.length / 2}</div>
         <div className="text-lg font-medium">Temps: {timeLeft}s</div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        {memoryCards.map(card => (
-          <motion.div
-            key={card.id}
-            className={`aspect-square cursor-pointer ${
-              flippedCards.includes(card.id) || matchedPairs.includes(card.id)
-                ? 'rotate-y-180'
-                : ''
-            }`}
-            onClick={() => handleCardClick(card.id)}
-          >
-            <div className={`
-              w-full h-full rounded-xl p-4 flex items-center justify-center text-center
-              ${flippedCards.includes(card.id) || matchedPairs.includes(card.id)
-                ? 'bg-purple-100 text-purple-700'
-                : 'bg-purple-600 text-white'
-              }
-            `}>
-              {flippedCards.includes(card.id) || matchedPairs.includes(card.id) ? (
-                card.type === 'question' ? (
-                  <span className="text-xl font-bold">
-                    {card.question?.a} × {card.question?.b}
-                  </span>
+      <div className="grid grid-cols-4 gap-2 sm:gap-4 flex-grow">
+        {memoryCards.map(card => {
+          const isFlipped = flippedCards.includes(card.id) || matchedPairs.includes(card.id);
+          return (
+            <motion.div
+              key={card.id}
+              className="relative aspect-square"
+              onClick={() => handleCardClick(card.id)}
+            >
+              <div className={`
+                absolute inset-0 flex items-center justify-center text-center
+                rounded-xl p-2 sm:p-4 cursor-pointer transition-all transform
+                ${isFlipped
+                  ? 'bg-purple-100 text-purple-700'
+                  : 'bg-purple-600 text-white'
+                }
+              `}>
+                {isFlipped ? (
+                  card.type === 'question' ? (
+                    <span className="text-base sm:text-xl font-bold">
+                      {card.question?.a} × {card.question?.b}
+                    </span>
+                  ) : (
+                    <span className="text-lg sm:text-2xl font-bold">{card.value}</span>
+                  )
                 ) : (
-                  <span className="text-2xl font-bold">{card.value}</span>
-                )
-              ) : (
-                '?'
-              )}
-            </div>
-          </motion.div>
-        ))}
+                  '?'
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );
