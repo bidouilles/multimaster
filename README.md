@@ -1,5 +1,7 @@
 # MultiMaster - Application d'Apprentissage des Tables de Multiplication
 
+**Remarque :** Cette application a été développée entièrement en utilisant le service d'intelligence artificielle [bolt.new](https://bolt.new/).
+
 MultiMaster est une application web interactive et ludique conçue pour aider les enfants à maîtriser leurs tables de multiplication à travers différents modes de jeu et un système de progression motivant.
 
 ![MultiMaster Screenshot](screenshot.png)
